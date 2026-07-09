@@ -9,7 +9,9 @@
 #include <stdint.h>
 
 #include <esp-stub-lib/bit_utils.h>
+#include <esp-stub-lib/cache.h>
 #include <esp-stub-lib/log.h>
+#include <esp-stub-lib/mmu.h>
 #include <esp-stub-lib/soc_utils.h>
 
 #include <target/cache.h>
@@ -23,6 +25,7 @@ extern uint32_t _rom_eco_version;
 
 extern void esp_rom_spiflash_attach(uint32_t ishspi, bool legacy);
 extern void esp_rom_spiflash_boot_attach(uint32_t ishspi, bool legacy, bool boot_mode);
+extern uint32_t Cache_Disable_L2_Cache(void);
 
 extern void esp_rom_opiflash_exec_cmd_eco1(int spi_num,
                                            spi_flash_mode_t mode,
@@ -205,6 +208,23 @@ uint32_t stub_target_get_max_supported_flash_size(void)
 {
     /* ESP32-P4 supports up to 64MB with 4-byte addressing */
     return MIB(64);
+}
+
+int stub_target_flash_read_buff(uint32_t addr, void *buffer, uint32_t size)
+{
+    bool cache_was_enabled = stub_target_cache_is_enabled();
+
+    if (!cache_was_enabled) {
+        stub_target_cache_init(NULL);
+    }
+
+    int rc = stub_lib_mmu_read_flash(addr, buffer, size);
+
+    if (!cache_was_enabled) {
+        Cache_Disable_L2_Cache();
+    }
+
+    return rc;
 }
 
 void stub_target_flash_init(void *state, stub_lib_flash_attach_policy_t attach_policy)
