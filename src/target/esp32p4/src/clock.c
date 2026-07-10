@@ -105,13 +105,11 @@ static void stub_target_switch_to_dcdc(void)
     SET_PERI_REG_MASK(PMU_HP_ACTIVE_HP_REGULATOR0_REG, PMU_DIG_REGULATOR0_DBIAS_SEL);
     esp_rom_delay_us(1000);
 
-    if (chip_version > 301U) {
-        REG_SET_FIELD(LP_SYSTEM_REG_SYS_CTRL_REG, LP_SYSTEM_REG_LP_FIB_SEL, 0xEF);
-        CLEAR_PERI_REG_MASK(PMU_DCM_CTRL_REG, PMU_DCDC_FB_RES_FORCE_PD);
-        esp_rom_delay_us(10);
-    }
-
-    CLEAR_PERI_REG_MASK(PMU_HP_ACTIVE_HP_REGULATOR0_REG, PMU_HP_ACTIVE_HP_REGULATOR_XPD);
+    /*
+     * Intentionally skip the ECO6+ LP_FIB_SEL / FB_RES handoff and keep HP LDO
+     * XPD enabled. IDF clears XPD after DCDC is up; in stub + USJ that step
+     * (with FIB_SEL) is a suspect for post-flash hard-reset link death.
+     */
 }
 
 static void stub_target_apply_cpu_240mhz(void)
