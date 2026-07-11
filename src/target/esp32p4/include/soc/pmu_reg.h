@@ -75,6 +75,9 @@
 
 /** PMU_IMM_HP_CK_POWER_REG register */
 #define PMU_IMM_HP_CK_POWER_REG (DR_REG_PMU_BASE + 0xcc)
+#define PMU_TIE_LOW_GLOBAL_CPLL_ICG    (BIT(1))
+#define PMU_TIE_LOW_XPD_CPLL_I2C    (BIT(7))
+#define PMU_TIE_LOW_XPD_CPLL    (BIT(11))
 #define PMU_TIE_HIGH_GLOBAL_CPLL_ICG    (BIT(17))
 #define PMU_TIE_HIGH_XPD_CPLL_I2C    (BIT(23))
 #define PMU_TIE_HIGH_XPD_CPLL    (BIT(27))

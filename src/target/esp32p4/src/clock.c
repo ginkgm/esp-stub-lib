@@ -23,12 +23,16 @@
 #define HP_CALI_ACTIVE_DBIAS_DEFAULT    24
 #define LP_CALI_ACTIVE_DBIAS_DEFAULT    29
 
-#define CPU_FREQ_MHZ 240
+#define CPU_FREQ_MHZ   360
+#define XTAL_FREQ_MHZ  40
 
 #define HP_SYS_CLKRST_ROOT_CLK_CTRL0_REG (DR_REG_HP_SYS_CLKRST_BASE + 0x4)
 #define HP_SYS_CLKRST_ROOT_CLK_CTRL1_REG (DR_REG_HP_SYS_CLKRST_BASE + 0x8)
 #define HP_SYS_CLKRST_ROOT_CLK_CTRL2_REG (DR_REG_HP_SYS_CLKRST_BASE + 0xc)
-#define HP_SYS_CLKRST_SOC_CLK_DIV_UPDATE  (BIT(4))
+#define HP_SYS_CLKRST_ANA_PLL_CTRL0_REG  (DR_REG_HP_SYS_CLKRST_BASE + 0xbc)
+#define HP_SYS_CLKRST_SOC_CLK_DIV_UPDATE (BIT(4))
+#define HP_SYS_CLKRST_REG_CPU_PLL_CAL_END  (BIT(2))
+#define HP_SYS_CLKRST_REG_CPU_PLL_CAL_STOP (BIT(3))
 
 #define HP_SYS_CLKRST_REG_CPU_CLK_DIV_NUM    0x000000FFU
 #define HP_SYS_CLKRST_REG_CPU_CLK_DIV_NUM_M  (HP_SYS_CLKRST_REG_CPU_CLK_DIV_NUM_V << HP_SYS_CLKRST_REG_CPU_CLK_DIV_NUM_S)
@@ -50,10 +54,51 @@
 #define HP_SYS_CLKRST_REG_MEM_CLK_DIV_NUM_V  0x000000FFU
 #define HP_SYS_CLKRST_REG_MEM_CLK_DIV_NUM_S  0
 
+#define HP_SYS_CLKRST_REG_SYS_CLK_DIV_NUM    0x000000FFU
+#define HP_SYS_CLKRST_REG_SYS_CLK_DIV_NUM_M  (HP_SYS_CLKRST_REG_SYS_CLK_DIV_NUM_V << HP_SYS_CLKRST_REG_SYS_CLK_DIV_NUM_S)
+#define HP_SYS_CLKRST_REG_SYS_CLK_DIV_NUM_V  0x000000FFU
+#define HP_SYS_CLKRST_REG_SYS_CLK_DIV_NUM_S  24
+
 #define HP_SYS_CLKRST_REG_APB_CLK_DIV_NUM    0x000000FFU
 #define HP_SYS_CLKRST_REG_APB_CLK_DIV_NUM_M  (HP_SYS_CLKRST_REG_APB_CLK_DIV_NUM_V << HP_SYS_CLKRST_REG_APB_CLK_DIV_NUM_S)
 #define HP_SYS_CLKRST_REG_APB_CLK_DIV_NUM_V  0x000000FFU
 #define HP_SYS_CLKRST_REG_APB_CLK_DIV_NUM_S  16
+
+/* Analog I2C master used to program CPLL (from IDF regi2c_impl / regi2c_cpll). */
+#define DR_REG_LP_I2C_ANA_MST_BASE           DR_REG_I2C_ANA_MST_BASE
+#define LPPERI_CLK_EN_REG                    (DR_REG_LPPERI_BASE + 0x0)
+#define LPPERI_CK_EN_LP_I2CMST               (BIT(27))
+#define LP_I2C_ANA_MST_I2C0_CTRL_REG         (DR_REG_LP_I2C_ANA_MST_BASE + 0x0)
+#define LP_I2C_ANA_MST_ANA_CONF1_REG         (DR_REG_LP_I2C_ANA_MST_BASE + 0x1c)
+#define LP_I2C_ANA_MST_ANA_CONF2_REG         (DR_REG_LP_I2C_ANA_MST_BASE + 0x20)
+#define LP_I2C_ANA_MST_CLK160M_REG           (DR_REG_LP_I2C_ANA_MST_BASE + 0x34)
+#define LP_I2C_ANA_MST_ANA_CONF1             0x00FFFFFFU
+#define LP_I2C_ANA_MST_ANA_CONF1_M           (LP_I2C_ANA_MST_ANA_CONF1_V << LP_I2C_ANA_MST_ANA_CONF1_S)
+#define LP_I2C_ANA_MST_ANA_CONF1_V           0x00FFFFFFU
+#define LP_I2C_ANA_MST_ANA_CONF1_S           0
+#define LP_I2C_ANA_MST_ANA_CONF2             0x00FFFFFFU
+#define LP_I2C_ANA_MST_ANA_CONF2_M           (LP_I2C_ANA_MST_ANA_CONF2_V << LP_I2C_ANA_MST_ANA_CONF2_S)
+#define LP_I2C_ANA_MST_ANA_CONF2_V           0x00FFFFFFU
+#define LP_I2C_ANA_MST_ANA_CONF2_S           0
+#define LP_I2C_ANA_MST_CLK_I2C_MST_SEL_160M  (BIT(0))
+#define REGI2C_PLL_CPU_MST_SEL               (BIT(11))
+#define REGI2C_RTC_BUSY                      (BIT(25))
+#define REGI2C_RTC_WR_CNTL_S                 24
+#define REGI2C_RTC_DATA_S                    16
+#define REGI2C_RTC_ADDR_S                    8
+#define REGI2C_RTC_SLAVE_ID_S                0
+
+#define I2C_CPLL                0x67
+#define I2C_CPLL_OC_REF_DIV     2
+#define I2C_CPLL_OC_DIV_7_0     3
+#define I2C_CPLL_OC_DCUR        6
+#define I2C_CPLL_OC_ENB_FCAL_LSB 7
+#define I2C_CPLL_OC_DCHGP_LSB   4
+#define I2C_CPLL_OC_DHREF_SEL_LSB 4
+#define I2C_CPLL_OC_DLREF_SEL_LSB 6
+
+#define HP_ROOT_CLK_SRC_XTAL  0
+#define HP_ROOT_CLK_SRC_CPLL  1
 
 extern uint32_t esp_rom_get_cpu_freq(void);
 extern void esp_rom_set_cpu_ticks_per_us(uint32_t ticks_per_us);
@@ -79,11 +124,143 @@ static void stub_target_bus_update(void)
     }
 }
 
+static void stub_target_cpu_set_src(unsigned src)
+{
+    REG_SET_FIELD(LP_CLKRST_HP_CLK_CTRL_REG, LP_CLKRST_HP_ROOT_CLK_SRC_SEL, src);
+}
+
+static void stub_target_cpu_set_divider(uint32_t integer, uint32_t numerator, uint32_t denominator)
+{
+    /* Hardware field stores (integer - 1), matching clk_ll_cpu_set_divider(). */
+    REG_SET_FIELD(HP_SYS_CLKRST_ROOT_CLK_CTRL0_REG, HP_SYS_CLKRST_REG_CPU_CLK_DIV_NUM, integer - 1U);
+    REG_SET_FIELD(HP_SYS_CLKRST_ROOT_CLK_CTRL0_REG, HP_SYS_CLKRST_REG_CPU_CLK_DIV_NUMERATOR, numerator);
+    REG_SET_FIELD(HP_SYS_CLKRST_ROOT_CLK_CTRL0_REG, HP_SYS_CLKRST_REG_CPU_CLK_DIV_DENOMINATOR, denominator);
+}
+
+static void stub_target_mem_set_divider(uint32_t divider)
+{
+    REG_SET_FIELD(HP_SYS_CLKRST_ROOT_CLK_CTRL1_REG, HP_SYS_CLKRST_REG_MEM_CLK_DIV_NUM, divider - 1U);
+}
+
+static void stub_target_sys_set_divider(uint32_t divider)
+{
+    REG_SET_FIELD(HP_SYS_CLKRST_ROOT_CLK_CTRL1_REG, HP_SYS_CLKRST_REG_SYS_CLK_DIV_NUM, divider - 1U);
+}
+
+static void stub_target_apb_set_divider(uint32_t divider)
+{
+    REG_SET_FIELD(HP_SYS_CLKRST_ROOT_CLK_CTRL2_REG, HP_SYS_CLKRST_REG_APB_CLK_DIV_NUM, divider - 1U);
+}
+
+static void stub_target_regi2c_enable_clock(void)
+{
+    SET_PERI_REG_MASK(LPPERI_CLK_EN_REG, LPPERI_CK_EN_LP_I2CMST);
+    SET_PERI_REG_MASK(LP_I2C_ANA_MST_CLK160M_REG, LP_I2C_ANA_MST_CLK_I2C_MST_SEL_160M);
+}
+
+static void stub_target_regi2c_write(uint8_t block, uint8_t reg_add, uint8_t data)
+{
+    REG_SET_FIELD(LP_I2C_ANA_MST_ANA_CONF2_REG, LP_I2C_ANA_MST_ANA_CONF2, 0);
+    REG_SET_FIELD(LP_I2C_ANA_MST_ANA_CONF1_REG, LP_I2C_ANA_MST_ANA_CONF1, 0);
+    SET_PERI_REG_MASK(LP_I2C_ANA_MST_ANA_CONF2_REG, REGI2C_PLL_CPU_MST_SEL);
+
+    while (REG_GET_BIT(LP_I2C_ANA_MST_I2C0_CTRL_REG, REGI2C_RTC_BUSY)) {
+    }
+    uint32_t temp = ((uint32_t)block << REGI2C_RTC_SLAVE_ID_S)
+                    | ((uint32_t)reg_add << REGI2C_RTC_ADDR_S)
+                    | (1U << REGI2C_RTC_WR_CNTL_S)
+                    | ((uint32_t)data << REGI2C_RTC_DATA_S);
+    REG_WRITE(LP_I2C_ANA_MST_I2C0_CTRL_REG, temp);
+    while (REG_GET_BIT(LP_I2C_ANA_MST_I2C0_CTRL_REG, REGI2C_RTC_BUSY)) {
+    }
+}
+
+static void stub_target_cpll_enable(void)
+{
+    SET_PERI_REG_MASK(PMU_IMM_HP_CK_POWER_REG, PMU_TIE_HIGH_XPD_CPLL | PMU_TIE_HIGH_XPD_CPLL_I2C);
+    SET_PERI_REG_MASK(PMU_IMM_HP_CK_POWER_REG, PMU_TIE_HIGH_GLOBAL_CPLL_ICG);
+}
+
+static void stub_target_cpll_configure(unsigned chip_version)
+{
+    /*
+     * Analog CPLL programming from clk_ll_cpll_set_config() /
+     * rtc_clk_cpll_configure(). Always target 360 MHz from 40 MHz XTAL,
+     * for both pre-ECO1 and later silicon (different OC_DIV encoding).
+     */
+    uint8_t div_ref = 0;
+    uint8_t div7_0;
+    uint8_t dchgp = 5;
+    uint8_t dcur = 3;
+    uint8_t oc_enb_fcal = 0;
+
+    if (chip_version < 1U) {
+        div7_0 = 5; /* ECO0: 360 MHz */
+    } else {
+        div7_0 = 9; /* ECO1+: 360 MHz */
+    }
+
+    uint8_t i2c_cpll_lref = (uint8_t)((oc_enb_fcal << I2C_CPLL_OC_ENB_FCAL_LSB)
+                                      | (dchgp << I2C_CPLL_OC_DCHGP_LSB)
+                                      | div_ref);
+    uint8_t i2c_cpll_dcur = (uint8_t)((1U << I2C_CPLL_OC_DLREF_SEL_LSB)
+                                      | (3U << I2C_CPLL_OC_DHREF_SEL_LSB)
+                                      | dcur);
+
+    stub_target_regi2c_enable_clock();
+    CLEAR_PERI_REG_MASK(HP_SYS_CLKRST_ANA_PLL_CTRL0_REG, HP_SYS_CLKRST_REG_CPU_PLL_CAL_STOP);
+    stub_target_regi2c_write(I2C_CPLL, I2C_CPLL_OC_REF_DIV, i2c_cpll_lref);
+    stub_target_regi2c_write(I2C_CPLL, I2C_CPLL_OC_DIV_7_0, div7_0);
+    stub_target_regi2c_write(I2C_CPLL, I2C_CPLL_OC_DCUR, i2c_cpll_dcur);
+    while ((READ_PERI_REG(HP_SYS_CLKRST_ANA_PLL_CTRL0_REG) & HP_SYS_CLKRST_REG_CPU_PLL_CAL_END) == 0) {
+    }
+    esp_rom_delay_us(10);
+    SET_PERI_REG_MASK(HP_SYS_CLKRST_ANA_PLL_CTRL0_REG, HP_SYS_CLKRST_REG_CPU_PLL_CAL_STOP);
+}
+
+static void stub_target_cpu_freq_to_xtal(void)
+{
+    /*
+     * rtc_clk_cpu_freq_to_xtal(xtal, 1, false): switch source first, then
+     * CPU/MEM/SYS/APB dividers to 1 (40-40-40-40).
+     */
+    stub_target_cpu_set_src(HP_ROOT_CLK_SRC_XTAL);
+    stub_target_cpu_set_divider(1, 0, 0);
+    stub_target_mem_set_divider(1);
+    stub_target_sys_set_divider(1);
+    stub_target_apb_set_divider(1);
+    stub_target_bus_update();
+    esp_rom_set_cpu_ticks_per_us(XTAL_FREQ_MHZ);
+}
+
+static void stub_target_cpu_freq_to_cpll_360mhz(void)
+{
+    /*
+     * IDF rtc_clk_cpu_freq_to_cpll_mhz(360):
+     * CPLL 360 /1 -> CPU 360, MEM /2 -> 180, SYS /1 -> 180, APB /2 -> 90.
+     * Upscale path: APB -> SYS -> MEM -> CPU, then source select last.
+     */
+    const uint32_t mem_divider = 2;
+    const uint32_t sys_divider = 1;
+    const uint32_t apb_divider = 2;
+
+    stub_target_apb_set_divider(apb_divider);
+    stub_target_bus_update();
+    stub_target_sys_set_divider(sys_divider);
+    stub_target_bus_update();
+    stub_target_mem_set_divider(mem_divider);
+    stub_target_bus_update();
+    stub_target_cpu_set_divider(1, 0, 0);
+    stub_target_bus_update();
+    stub_target_cpu_set_src(HP_ROOT_CLK_SRC_CPLL);
+    esp_rom_set_cpu_ticks_per_us(CPU_FREQ_MHZ);
+}
+
 static void stub_target_switch_to_dcdc(void)
 {
     /*
-     * DCDC switch sequence from ESP-IDF rtc_clk_init(), using fixed default
-     * regulator targets (no PVT auto-dbias).
+     * DCDC switch sequence from ESP-IDF rtc_clk_init(), including ECO6+
+     * FIB handoff and HP LDO XPD off (rtc_clk_init.c:81-88).
      */
     unsigned chip_version = stub_target_get_chip_revision();
 
@@ -105,28 +282,27 @@ static void stub_target_switch_to_dcdc(void)
     SET_PERI_REG_MASK(PMU_HP_ACTIVE_HP_REGULATOR0_REG, PMU_DIG_REGULATOR0_DBIAS_SEL);
     esp_rom_delay_us(1000);
 
-    /*
-     * Intentionally skip the ECO6+ LP_FIB_SEL / FB_RES handoff and keep HP LDO
-     * XPD enabled. IDF clears XPD after DCDC is up; in stub + USJ that step
-     * (with FIB_SEL) is a suspect for post-flash hard-reset link death.
-     */
+    if (chip_version > 301U) {
+        REG_SET_FIELD(LP_SYSTEM_REG_SYS_CTRL_REG, LP_SYSTEM_REG_LP_FIB_SEL, 0xEF);
+        CLEAR_PERI_REG_MASK(PMU_DCM_CTRL_REG, PMU_DCDC_FB_RES_FORCE_PD);
+        esp_rom_delay_us(10);
+    }
+
+    CLEAR_PERI_REG_MASK(PMU_HP_ACTIVE_HP_REGULATOR0_REG, PMU_HP_ACTIVE_HP_REGULATOR_XPD);
 }
 
-static void stub_target_apply_cpu_240mhz(void)
+static void stub_target_apply_cpu_360mhz(void)
 {
     /*
-     * On v3.x silicon the CPLL root is 400 MHz in download mode. Derive a real
-     * 240 MHz CPU clock with a 3/5 divider and keep MEM/APB within IDF limits.
+     * Match rtc_clk_cpu_freq_set_config() for CPLL@360 / CPU@360:
+     * switch to XTAL, (re)configure CPLL to 360, then raise CPU tree.
      */
-    REG_SET_FIELD(HP_SYS_CLKRST_ROOT_CLK_CTRL2_REG, HP_SYS_CLKRST_REG_APB_CLK_DIV_NUM, 1);
-    stub_target_bus_update();
-    REG_SET_FIELD(HP_SYS_CLKRST_ROOT_CLK_CTRL1_REG, HP_SYS_CLKRST_REG_MEM_CLK_DIV_NUM, 1);
-    stub_target_bus_update();
-    REG_SET_FIELD(HP_SYS_CLKRST_ROOT_CLK_CTRL0_REG, HP_SYS_CLKRST_REG_CPU_CLK_DIV_NUM, 0);
-    REG_SET_FIELD(HP_SYS_CLKRST_ROOT_CLK_CTRL0_REG, HP_SYS_CLKRST_REG_CPU_CLK_DIV_NUMERATOR, 2);
-    REG_SET_FIELD(HP_SYS_CLKRST_ROOT_CLK_CTRL0_REG, HP_SYS_CLKRST_REG_CPU_CLK_DIV_DENOMINATOR, 3);
-    stub_target_bus_update();
-    REG_SET_FIELD(LP_CLKRST_HP_CLK_CTRL_REG, LP_CLKRST_HP_ROOT_CLK_SRC_SEL, 1);
+    unsigned chip_version = stub_target_get_chip_revision();
+
+    stub_target_cpu_freq_to_xtal();
+    stub_target_cpll_enable();
+    stub_target_cpll_configure(chip_version);
+    stub_target_cpu_freq_to_cpll_360mhz();
 }
 
 void stub_target_clock_init(void)
@@ -134,9 +310,7 @@ void stub_target_clock_init(void)
     stub_target_switch_to_dcdc();
 
     s_cpu_freq = CPU_FREQ_MHZ * MHZ;
-    esp_rom_set_cpu_ticks_per_us(CPU_FREQ_MHZ);
-
-    stub_target_apply_cpu_240mhz();
+    stub_target_apply_cpu_360mhz();
 }
 
 uint32_t stub_target_get_cpu_freq(void)
