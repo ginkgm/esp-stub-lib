@@ -25,6 +25,14 @@
 #include <soc/reg_base.h>
 #include <soc/regi2c_cpll.h>
 #include <soc/soc.h>
+#include <soc/systimer_reg.h>
+
+/* Host-visible measurement result (read back via measure_p4_stub_cpu_mhz.py). */
+#define STUB_MEAS_MAGIC 0x53594651u /* 'SYFQ' */
+volatile uint32_t g_stub_meas_magic;
+volatile uint32_t g_stub_meas_mhz;
+volatile uint32_t g_stub_meas_dcycles;
+volatile uint32_t g_stub_meas_dticks;
 
 
 /* Match ESP-IDF pmu_param.h defaults used in rtc_clk_init(). */
@@ -427,6 +435,62 @@ static void stub_target_apply_cpu_cpll_div1(void)
 }
 
 
+
+/* P4 systimer runs from XTAL/2.5 => 16 MHz (see IDF systimer.c). */
+#define SYSTIMER_FREQ_MHZ 16u
+
+static uint64_t stub_target_read_systimer_ticks(void)
+{
+    SET_PERI_REG_MASK(SYSTIMER_CONF_REG, SYSTIMER_CLK_EN | SYSTIMER_TIMER_UNIT0_WORK_EN);
+    REG_WRITE(SYSTIMER_UNIT0_OP_REG, SYSTIMER_TIMER_UNIT0_UPDATE);
+    while ((REG_READ(SYSTIMER_UNIT0_OP_REG) & SYSTIMER_TIMER_UNIT0_VALUE_VALID) == 0) {
+    }
+    uint32_t lo = REG_READ(SYSTIMER_UNIT0_VALUE_LO_REG);
+    uint32_t hi = REG_READ(SYSTIMER_UNIT0_VALUE_HI_REG) & 0xFFFFFu;
+    return ((uint64_t)hi << 32) | lo;
+}
+
+static uint32_t stub_target_read_mcycle(void)
+{
+    uint32_t cycles;
+    __asm__ volatile(
+        ".option push\n"
+        ".option arch, +zicsr\n"
+        "csrr %0, mcycle\n"
+        ".option pop\n"
+        : "=r"(cycles));
+    return cycles;
+}
+
+static void stub_target_measure_cpu_mhz_with_systimer(void)
+{
+    /*
+     * Busy-wait, then compare CPU mcycle delta against systimer ticks.
+     * cpu_mhz ~= (cpu_cycles * SYSTIMER_FREQ_MHZ) / systimer_ticks
+     */
+    volatile uint32_t spin = 0;
+    uint64_t t0 = stub_target_read_systimer_ticks();
+    uint32_t c0 = stub_target_read_mcycle();
+    for (uint32_t i = 0; i < 2000000u; i++) {
+        spin += i;
+    }
+    uint64_t t1 = stub_target_read_systimer_ticks();
+    uint32_t c1 = stub_target_read_mcycle();
+
+    uint64_t dt = t1 - t0;
+    uint32_t dc = c1 - c0;
+    uint32_t mhz = 0;
+    if (dt > 0) {
+        mhz = (uint32_t)(((uint64_t)dc * SYSTIMER_FREQ_MHZ) / dt);
+    }
+
+    g_stub_meas_dcycles = dc;
+    g_stub_meas_dticks = (uint32_t)(dt > 0xFFFFFFFFu ? 0xFFFFFFFFu : dt);
+    g_stub_meas_mhz = mhz;
+    g_stub_meas_magic = STUB_MEAS_MAGIC;
+    (void)spin;
+}
+
 void stub_target_clock_init(void)
 {
     /* Bootloader-equivalent: DCDC first (rtc_clk_init). */
@@ -449,6 +513,7 @@ void stub_target_clock_init(void)
     s_cpu_freq = CPU_FREQ_MHZ * MHZ;
     esp_rom_set_cpu_ticks_per_us(CPU_FREQ_MHZ);
 
+    stub_target_measure_cpu_mhz_with_systimer();
 }
 
 uint32_t stub_target_get_cpu_freq(void)
